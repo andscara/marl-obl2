@@ -1,0 +1,10 @@
+.venv/
+.virtual_documents/
+.ipynb_checkpoints/
+*.npy
+__pycache__/
+*.pkl
+data
+wandb
+.env
+.venv*
