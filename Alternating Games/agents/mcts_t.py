@@ -21,7 +21,7 @@ def ucb(node, C=sqrt(2)) -> float:
     agent_idx = node.game.agent_name_mapping[node.agent]
     return node.cum_rewards[agent_idx] / node.visits + C * sqrt(log(node.parent.visits)/node.visits)
 
-def uct(node: MCTSNode, agent: AgentID) -> MCTSNode:
+def uct(node: MCTSNode) -> MCTSNode: # agent: AgentID ¿Por qué no se usa?
     child = max(node.children, key=ucb)
     return child
 
@@ -99,32 +99,18 @@ class MonteCarloTreeSearch(Agent):
         #     play random game and record average rewards
         for i in range(self.rollouts):
             sim  = node.game.clone()
-            while not sim .terminated:
-                action = sim .random_action(node.agent)
-                sim .step(action)
+            while not sim.terminated:
+                action = sim.random_action(node.agent)
+                sim.step(action)
             for i, agent_id in enumerate(sim.agents):
                 rewards[i] += sim.rewards[agent_id]
         return rewards / float(self.rollouts)
 
     def select_node(self, node: MCTSNode):
-        curr_node = node
-
-        while curr_node.children:
-            if curr_node.explored_children < len(curr_node.children):
-                idx = curr_node.explored_children
-                curr_node.explored_children += 1
-                curr_node = curr_node.children[idx]
-            else:
-                best_child = None
-                best_value = float("-inf")
-                for hijo in curr_node.children:
-                    val = ucb(hijo)
-                    if val > best_value:
-                        best_value = val
-                        best_child = hijo
-                curr_node = best_child
-
-        return curr_node
+        if node.explored_children < node.game.num_actions(node.agent):
+            return node
+        else:
+            return self.select_node(self.uct(node))
 
     def expand_node(self, node) -> None:
         # TODO
