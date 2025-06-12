@@ -100,6 +100,3 @@ class TicTacToe(AlternatingGame):
         diag2 = int(all(np.fliplr(grid).diagonal() != player))
 
         return (rows + cols + diag1 + diag2)
-
-    
-    

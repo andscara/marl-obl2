@@ -17,12 +17,21 @@ class Node():
         self.niter = 1
 
     def regret_matching(self):
-        # TODO
-        pass
-    
+        sum = np.sum([max(g, 0) for g in self.cum_regrets])
+        if sum == 0:
+            self.curr_policy = np.full(self.num_actions, 1/self.num_actions)
+        else:
+            self.curr_policy = [max(g, 0) for g in self.cum_regrets] / sum
+        # o acá
+        self.niter += 1
+        self.learned_policy = self.sum_policy / self.niter
+
     def update(self, utility, node_utility, probability) -> None:
-        # update 
-        # ...
+        # update
+        product_p = np.prod([prob for q, prob in enumerate(probability) if q != self.agent])
+        self.cum_regrets += np.array(utility - node_utility) * product_p
+        self.sum_policy += probability[self.agent] * self.curr_policy() # Acá
+
         # regret matching policy
         self.regret_matching()  
 
@@ -61,7 +70,38 @@ class CounterFactualRegret(Agent):
 
     def cfr_rec(self, game: AlternatingGame, agent: AgentID, probability: ndarray):
         # TODO
-        node_utility = 0 #remove
+        if game.terminated:
+            return game.reward(agent)
+
+        agent_q = game.agent_selection
+
+        I = game.observe(agent_q)
+
+        if I not in self.node_dict:
+            self.node_dict[I] = Node(game, I)
+        node = self.node_dict[I]
+
+        node_utility = 0
+        utility = [0] * node.num_actions
+        for a in range(node.num_actions):
+            g = game.clone()
+            g.step(a)
+            P = probability.copy()
+            P[agent_q] *= node.curr_policy[a]
+            utility[a] = self.cfr_rec(g, agent_q, P)
+            node_utility += node.curr_policy[a] * utility[a]
+
+        if agent == agent_q:
+            node.update(utility, node_utility, probability)
+
+        return node_utility
+ 
+
+
+
+
+
+
 
         return node_utility
         

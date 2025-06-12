@@ -79,6 +79,8 @@ class KuhnPoker(AlternatingGame):
             self.rewards = dict(map(lambda p: (p, _rewards[self.agent_name_mapping[p]]), self.agents))
             self.terminations = dict(map(lambda p: (p, True), self.agents))
 
+        self.observations = dict(map(lambda agent: (agent, {'card': self._hand[self.agent_name_mapping[agent]], 'hist': self._hist}), self.agents))
+
     def _set_initial(self):
         # set initial history
         self._hist = self._start
@@ -99,6 +101,7 @@ class KuhnPoker(AlternatingGame):
     def reset(self, seed: int | None = None, options: dict | None = None) -> None:
         self._set_initial()
 
+        self.observations = dict(map(lambda agent: (agent, {'card': self._hand[self.agent_name_mapping[agent]], 'hist': self._hist}), self.agents))
         self.rewards = dict(map(lambda agent: (agent, None), self.agents))
         self.terminations = dict(map(lambda agent: (agent, False), self.agents))
         self.truncations = dict(map(lambda agent: (agent, False), self.agents))
