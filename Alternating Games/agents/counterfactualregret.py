@@ -1,5 +1,8 @@
 import numpy as np
 from numpy import ndarray
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from base.game import AlternatingGame, AgentID, ObsType
 from base.agent import Agent
 
@@ -28,9 +31,10 @@ class Node():
 
     def update(self, utility, node_utility, probability) -> None:
         # update
-        product_p = np.prod([prob for q, prob in enumerate(probability) if q != self.agent])
+        agent_idx = self.game.agent_name_mapping[self.agent]
+        product_p = np.prod([prob for q, prob in enumerate(probability) if q != agent_idx])
         self.cum_regrets += np.array(utility - node_utility) * product_p
-        self.sum_policy += probability[self.agent] * self.curr_policy() # Acá
+        self.sum_policy += probability[agent_idx] * self.curr_policy
 
         # regret matching policy
         self.regret_matching()  
@@ -50,7 +54,6 @@ class CounterFactualRegret(Agent):
             a = np.argmax(np.random.multinomial(1, node.policy(), size=1))
             return a
         except:
-            #raise ValueError('Train agent before calling action()')
             print('Node does not exist. Playing random.')
             return np.random.choice(self.game.available_actions())
     
@@ -70,7 +73,7 @@ class CounterFactualRegret(Agent):
 
     def cfr_rec(self, game: AlternatingGame, agent: AgentID, probability: ndarray):
         # TODO
-        if game.terminated:
+        if game.terminated():
             return game.reward(agent)
 
         agent_q = game.agent_selection
@@ -87,7 +90,7 @@ class CounterFactualRegret(Agent):
             g = game.clone()
             g.step(a)
             P = probability.copy()
-            P[agent_q] *= node.curr_policy[a]
+            P[game.agent_name_mapping[agent_q]] *= node.curr_policy[a]
             utility[a] = self.cfr_rec(g, agent_q, P)
             node_utility += node.curr_policy[a] * utility[a]
 
@@ -96,12 +99,26 @@ class CounterFactualRegret(Agent):
 
         return node_utility
  
+def main():
+    from games.kuhn.kuhn import KuhnPoker
+    from agents.counterfactualregret import CounterFactualRegret
+    from collections import OrderedDict
 
+    g = KuhnPoker()
 
+    agent_classes = [ CounterFactualRegret, CounterFactualRegret ]
+    my_agents = {}
+    g.reset()
+    for i, agent in enumerate(g.agents):
+        my_agents[agent] = agent_classes[i](game=g, agent=agent)
 
+    for agent in g.agents:
+        print(g.observe(agent))
+        print('Training agent ' + agent)
+        my_agents[agent].train(10) # 100000
+        print('Agent ' + agent + ' policies:')
+        print(OrderedDict(map(lambda n: (n, my_agents[agent].node_dict[n].policy()), sorted(my_agents[agent].node_dict.keys()))))
+        print('')
 
-
-
-
-        return node_utility
-        
+if __name__ == '__main__':
+    main()
