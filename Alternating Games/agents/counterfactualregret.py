@@ -20,14 +20,13 @@ class Node():
         self.niter = 1
 
     def regret_matching(self):
-        sum = np.sum([max(g, 0) for g in self.cum_regrets])
-        if sum == 0:
+        suma = np.sum([max(g, 0) for g in self.cum_regrets])
+        if suma == 0:
             self.curr_policy = np.full(self.num_actions, 1/self.num_actions)
         else:
-            self.curr_policy = [max(g, 0) for g in self.cum_regrets] / sum
-        # o acá
-        self.niter += 1
+            self.curr_policy = np.array([max(g, 0) for g in self.cum_regrets]) / suma
         self.learned_policy = self.sum_policy / self.niter
+        self.niter += 1
 
     def update(self, utility, node_utility, probability) -> None:
         # update
@@ -91,7 +90,9 @@ class CounterFactualRegret(Agent):
             g.step(a)
             P = probability.copy()
             P[game.agent_name_mapping[agent_q]] *= node.curr_policy[a]
-            utility[a] = self.cfr_rec(g, agent_q, P)
+            utility[a] = self.cfr_rec(g, agent, P)
+
+        for a in range(node.num_actions):
             node_utility += node.curr_policy[a] * utility[a]
 
         if agent == agent_q:
