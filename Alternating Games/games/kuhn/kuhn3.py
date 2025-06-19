@@ -2,9 +2,10 @@ import numpy as np
 from numpy import ndarray
 from numpy import random
 from gymnasium.spaces import Discrete, Text, Dict, Tuple
+from pettingzoo.utils import agent_selector
 from base.game import AlternatingGame, AgentID, ActionType
 
-class KuhnPoker(AlternatingGame):
+class KuhnPoker3(AlternatingGame):
 
     def __init__(self, initial_player=None, seed=None, render_mode='human'):
         self.render_mode = render_mode
@@ -13,8 +14,8 @@ class KuhnPoker(AlternatingGame):
         random.seed(seed)
 
         # agents
-        self.agents = ["agent_0", "agent_1"]
-        self.players = [0, 1]
+        self.agents = ["agent_" + str(r) for r in range(3)]
+        self.players = [0, 1, 2]
 
         self.initial_player = initial_player
 
@@ -30,12 +31,14 @@ class KuhnPoker(AlternatingGame):
         }
 
         # states
-        self._max_moves = 3
+        self._max_moves = 5
         self._start = ''
-        self._terminalset = set(['pp', 'pbp', 'pbb', 'bp', 'bb'])
+        self._terminalset = set(['ppp', 'bpp', 'bbp', 'bpb', 'bbb', 
+                                 'pbpp', 'pbpb', 'pbbp', 'pbbb',
+                                 'ppbpp', 'ppbbp', 'ppbpb', 'ppbbb'])
         self._hist_space = Text(min_length=0, max_length=self._max_moves, charset=frozenset(self._moves))
         self._hist = None
-        self._card_names = ['J', 'Q', 'K']
+        self._card_names = ['J', 'Q', 'K', 'A']
         self._num_cards = len(self._card_names)
         self._cards = list(range(self._num_cards))
         self._card_space = Discrete(self._num_cards)
@@ -58,36 +61,20 @@ class KuhnPoker(AlternatingGame):
 
         # perform step
         self._hist += self._moves[action]
-        self._player = (self._player + 1) % 2
+        self._player = (self._player + 1) % self.num_agents
         self.agent_selection = self.agents[self._player]
 
         if self._hist in self._terminalset:
-            # game over - compute rewards
-            if self._hist == 'pp':                  
-                # pass pass
-                _rewards = list(map(lambda p: 1 if p == np.argmax(self._hand) else -1, range(self.num_agents))) 
-            elif self._hist == 'pbp':               
-                # pass bet pass
-                _rewards = list(map(lambda p: 1 if p == 1 else -1, range(self.num_agents)))
-            elif self._hist == 'bp':                
-                # bet pass
-                _rewards = list(map(lambda p: 1 if p == 0 else -1, range(self.num_agents))) 
-            else:                                   
-                # pass bet bet OR bet bet
-                _rewards = list(map(lambda p: 2 if p == np.argmax(self._hand) else -2, range(self.num_agents)))              
-        
-            self.rewards = dict(map(lambda p: (p, _rewards[self.agent_name_mapping[p]]), self.agents))
+            self._compute_rewards()
             self.terminations = dict(map(lambda p: (p, True), self.agents))
-
-        self.observations = dict(map(lambda agent: (agent, {'card': self._hand[self.agent_name_mapping[agent]], 'hist': self._hist}), self.agents))
 
     def _set_initial(self):
         # set initial history
         self._hist = self._start
 
         # deal a card to each player
-        random.seed(self.seed)
-        self._hand = random.choice(self._cards, size=self.num_agents, replace=False)      
+        np.random.seed(self.seed)
+        self._hand = np.random.choice(self._cards, size=self.num_agents, replace=False)      
 
         # reset agent selection
         if self.initial_player is None:
@@ -96,8 +83,26 @@ class KuhnPoker(AlternatingGame):
  
         self._player = self.initial_player
         self.agent_selection = self.agents[self._player]
-
+    
+    def _compute_rewards(self) -> None:
+        N = self.num_agents
+        _rewards = np.full(N, -1)
+        bets = []
+        for i, a in enumerate(self._hist):
+            if a == 'b':
+                bets.append(i % N)
+                _rewards[i % N] -= 1
+        if len(bets) == 0:
+            winner = np.argmax(list(map(lambda i: self._hand[i], range(N))))
+            _rewards[winner] = N-1
+        else:
+            bets.sort()
+            best_card = np.max(list(map(lambda i: self._hand[i], bets)))
+            winner = np.max(list(map(lambda i: i if self._hand[i] == best_card else 0, bets)))
+            _rewards[winner] += 2 * len(bets) + (N - len(bets))
         
+        self.rewards = dict(map(lambda p: (p, _rewards[self.agent_name_mapping[p]]), self.agents))
+
     def reset(self, seed: int | None = None, options: dict | None = None) -> None:
         self._set_initial()
 
@@ -117,16 +122,6 @@ class KuhnPoker(AlternatingGame):
     
     def available_actions(self):
         return list(range(self._num_actions))
-    
-    def random_change(self, agent: AgentID):
-        agent_idx = self.agent_name_mapping[agent]
-        agent_card = self._hand[agent_idx]
-        other_idx = 1 - agent_idx 
-        other_cards = self._cards.copy()
-        other_cards.pop(agent_card)
-        new_game = self.clone()
-        new_game._hand[other_idx] = np.random.choice(other_cards)
-        return new_game
 
     def action_move(self, action: ActionType) -> str:
         if action not in range(self._num_actions):

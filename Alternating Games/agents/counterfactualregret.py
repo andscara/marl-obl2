@@ -21,12 +21,13 @@ class Node():
 
     def regret_matching(self):
         suma = np.sum([max(g, 0) for g in self.cum_regrets])
-        if suma == 0:
-            self.curr_policy = np.full(self.num_actions, 1/self.num_actions)
-        else:
+        if suma > 0:
             self.curr_policy = np.array([max(g, 0) for g in self.cum_regrets]) / suma
-        self.learned_policy = self.sum_policy / self.niter
-        self.niter += 1
+        else:
+            self.curr_policy = np.full(self.num_actions, 1/self.num_actions)
+
+        #self.niter += 1
+        self.learned_policy = self.sum_policy / np.sum(self.sum_policy)
 
     def update(self, utility, node_utility, probability) -> None:
         # update
@@ -34,6 +35,14 @@ class Node():
         product_p = np.prod([prob for q, prob in enumerate(probability) if q != agent_idx])
         self.cum_regrets += np.array(utility - node_utility) * product_p
         self.sum_policy += probability[agent_idx] * self.curr_policy
+        # agent_idx = self.game.agent_name_mapping[self.agent]
+        # product_p = np.prod([prob for q, prob in enumerate(probability) if q != agent_idx])
+        # regret = np.array(utility - node_utility)
+        # for q, prob in enumerate(probability):
+        #     if q != agent_idx:
+        #         regret = regret * prob
+        #self.cum_regrets += regret
+        #self.sum_policy += probability[agent_idx] * self.curr_policy
 
         # regret matching policy
         self.regret_matching()  
@@ -68,7 +77,7 @@ class CounterFactualRegret(Agent):
             probability = np.ones(game.num_agents)
             utility[agent] = self.cfr_rec(game=game, agent=agent, probability=probability)
 
-        return utility 
+        return utility
 
     def cfr_rec(self, game: AlternatingGame, agent: AgentID, probability: ndarray):
         # TODO
@@ -85,7 +94,7 @@ class CounterFactualRegret(Agent):
 
         node_utility = 0
         utility = [0] * node.num_actions
-        for a in range(node.num_actions):
+        for a in node.game.action_iter(node.game.agent_selection):
             g = game.clone()
             g.step(a)
             P = probability.copy()
