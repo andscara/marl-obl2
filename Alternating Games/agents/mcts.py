@@ -83,11 +83,11 @@ class MonteCarloTreeSearch(Agent):
     def backprop(self, node, rewards):
         # TODO
         # cumulate rewards and visits from node to root navigating backwards through parent
-        agent_idx = node.game.agent_name_mapping[self.agent]
-        while node is not None:            
-            node.cum_rewards[agent_idx] += rewards[agent_idx]
+        while node is not None:
+            node.cum_rewards += rewards
             node.visits += 1
-            node.value = node.cum_rewards[agent_idx] / node.visits
+            if node.parent is not None:
+                node.value = node.cum_rewards[node.game.agent_name_mapping[node.parent.agent]] / node.visits
             node = node.parent
 
     def rollout(self, node):
