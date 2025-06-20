@@ -32,24 +32,24 @@ class Board:
             return WHITE
         return BLACK
 
-    def return_distances(self, player: Player) -> bool:
+    def player_min_distance(self, player: Player) -> float:
         player_squares = np.argwhere(self.squares == player)
-        distances = []
+        goal = BLACK_GOAL if player == BLACK else WHITE_GOAL
+        min_distance = float("inf")
         for x, y, k in player_squares:
             stack = self.squares[x][y]
-            opponent_pieces = np.argwhere(stack == Board._opponent(player)).tolist()
-            player_blocked = len(opponent_pieces) != 0 and any(
-                h > k for h in opponent_pieces
-            )
+            index_top = (stack != EMPTY).nonzero()[0].max()
 
-            GOAL = BLACK_GOAL if player == BLACK else WHITE_GOAL
+            # bloqueada
+            if index_top > k:
+                continue
 
-            if not player_blocked:
-                distances.append(abs(GOAL-y))
-            else:
-                distances.append(np.inf)
+            distance = abs(goal-y)
 
-        return distances
+            if distance < min_distance:
+                min_distance = distance
+
+        return min_distance / ROWS
 
     def _check_player_blocked(self, player: Player) -> bool:
         player_squares = np.argwhere(self.squares == player)

@@ -147,12 +147,7 @@ class NoccaNocca(AlternatingGame):
             return self.rewards[agent]
     
         player = self.agent_name_mapping[agent]
+        player_distance = self.board.player_min_distance(player)
+        opponent_distance = self.board.player_min_distance(self.board._opponent(player))
 
-        agent_distances = self.board.return_distances(player)
-        oponent_distances = self.board.return_distances(self.board._opponent(player))
-
-        agent_avg_inv_distance = np.sum(1/agent_distances) / len(agent_distances)
-        oponent_avg_inv_distance = np.sum(1/oponent_distances) / len(oponent_distances)
-        v_aprox = agent_avg_inv_distance - oponent_avg_inv_distance
-
-        return v_aprox
+        return opponent_distance - player_distance
