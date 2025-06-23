@@ -26,23 +26,14 @@ class Node():
         else:
             self.curr_policy = np.full(self.num_actions, 1/self.num_actions)
 
-        #self.niter += 1
         self.learned_policy = self.sum_policy / np.sum(self.sum_policy)
 
     def update(self, utility, node_utility, probability) -> None:
         # update
         agent_idx = self.game.agent_name_mapping[self.agent]
         product_p = np.prod([prob for q, prob in enumerate(probability) if q != agent_idx])
-        self.cum_regrets += np.array(utility - node_utility) * product_p
+        self.cum_regrets += (utility - node_utility) * product_p
         self.sum_policy += probability[agent_idx] * self.curr_policy
-        # agent_idx = self.game.agent_name_mapping[self.agent]
-        # product_p = np.prod([prob for q, prob in enumerate(probability) if q != agent_idx])
-        # regret = np.array(utility - node_utility)
-        # for q, prob in enumerate(probability):
-        #     if q != agent_idx:
-        #         regret = regret * prob
-        #self.cum_regrets += regret
-        #self.sum_policy += probability[agent_idx] * self.curr_policy
 
         # regret matching policy
         self.regret_matching()  
@@ -85,6 +76,7 @@ class CounterFactualRegret(Agent):
             return game.reward(agent)
 
         agent_q = game.agent_selection
+        agent_q_index = game.agent_name_mapping[agent_q]
 
         I = game.observe(agent_q)
 
@@ -92,15 +84,16 @@ class CounterFactualRegret(Agent):
             self.node_dict[I] = Node(game, I)
         node = self.node_dict[I]
 
-        node_utility = 0
-        utility = [0] * node.num_actions
-        for a in node.game.action_iter(node.game.agent_selection):
+        actions = list(game.action_iter(agent_q))
+        utility = np.zeros(len(actions))
+        for action_index, action in enumerate(actions):
             g = game.clone()
-            g.step(a)
+            g.step(action)
             P = probability.copy()
-            P[game.agent_name_mapping[agent_q]] *= node.curr_policy[a]
-            utility[a] = self.cfr_rec(g, agent, P)
+            P[agent_q_index] *= node.curr_policy[action_index]
+            utility[action_index] = self.cfr_rec(g, agent, P)
 
+        node_utility = 0
         for a in range(node.num_actions):
             node_utility += node.curr_policy[a] * utility[a]
 
