@@ -101,27 +101,4 @@ class CounterFactualRegret(Agent):
             node.update(utility, node_utility, probability)
 
         return node_utility
- 
-def main():
-    from games.kuhn.kuhn import KuhnPoker
-    from agents.counterfactualregret import CounterFactualRegret
-    from collections import OrderedDict
 
-    g = KuhnPoker()
-
-    agent_classes = [ CounterFactualRegret, CounterFactualRegret ]
-    my_agents = {}
-    g.reset()
-    for i, agent in enumerate(g.agents):
-        my_agents[agent] = agent_classes[i](game=g, agent=agent)
-
-    for agent in g.agents:
-        print(g.observe(agent))
-        print('Training agent ' + agent)
-        my_agents[agent].train(10) # 100000
-        print('Agent ' + agent + ' policies:')
-        print(OrderedDict(map(lambda n: (n, my_agents[agent].node_dict[n].policy()), sorted(my_agents[agent].node_dict.keys()))))
-        print('')
-
-if __name__ == '__main__':
-    main()
