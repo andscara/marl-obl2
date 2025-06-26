@@ -89,9 +89,10 @@ class KuhnPoker3(AlternatingGame):
         _rewards = np.full(N, -1)
         bets = []
         for i, a in enumerate(self._hist):
+            player = (self.initial_player + i) % N
             if a == 'b':
-                bets.append(i % N)
-                _rewards[i % N] -= 1
+                bets.append(player)
+                _rewards[player] -= 1
         if len(bets) == 0:
             winner = np.argmax(list(map(lambda i: self._hand[i], range(N))))
             _rewards[winner] = N-1

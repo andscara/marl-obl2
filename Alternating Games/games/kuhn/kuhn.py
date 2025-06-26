@@ -62,16 +62,18 @@ class KuhnPoker(AlternatingGame):
         self.agent_selection = self.agents[self._player]
 
         if self._hist in self._terminalset:
+            first = self.initial_player
+            second = 1 - first
             # game over - compute rewards
             if self._hist == 'pp':                  
                 # pass pass
                 _rewards = list(map(lambda p: 1 if p == np.argmax(self._hand) else -1, range(self.num_agents))) 
             elif self._hist == 'pbp':               
                 # pass bet pass
-                _rewards = list(map(lambda p: 1 if p == 1 else -1, range(self.num_agents)))
+                _rewards = list(map(lambda p: 1 if p == second else -1, range(self.num_agents)))
             elif self._hist == 'bp':                
                 # bet pass
-                _rewards = list(map(lambda p: 1 if p == 0 else -1, range(self.num_agents))) 
+                _rewards = list(map(lambda p: 1 if p == first else -1, range(self.num_agents))) 
             else:                                   
                 # pass bet bet OR bet bet
                 _rewards = list(map(lambda p: 2 if p == np.argmax(self._hand) else -2, range(self.num_agents)))              
