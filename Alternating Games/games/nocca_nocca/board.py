@@ -49,7 +49,21 @@ class Board:
             if distance < min_distance:
                 min_distance = distance
 
-        return min_distance / ROWS
+        return min_distance
+    
+    def blocked_by_opponent(self, player: Player) -> float:
+        player_squares = np.argwhere(self.squares == player)
+        blocked = 0
+        for x, y, k in player_squares:
+            stack = self.squares[x][y]
+            opponent_pieces = np.argwhere(stack == Board._opponent(player)).tolist()
+            player_blocked = len(opponent_pieces) != 0 and any(
+                h > k for h in opponent_pieces
+            )
+            if player_blocked:
+                blocked += 1
+
+        return blocked
 
     def _check_player_blocked(self, player: Player) -> bool:
         player_squares = np.argwhere(self.squares == player)

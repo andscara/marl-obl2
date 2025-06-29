@@ -147,16 +147,41 @@ class NoccaNocca(AlternatingGame):
         self_clone.agent_selection = self.agent_selection
         self_clone.steps = self.steps
         return self_clone
+
+    def distance_feature(self, agent: AgentID) -> float:
+        player = self.agent_name_mapping[agent]
+        player_distance = self.board.player_min_distance(player)
+        opponent_distance = self.board.player_min_distance(self.board._opponent(player))
+        max_difference = ROWS - 3
+
+        return (opponent_distance - player_distance) / max_difference
     
+    def blocked_feature(self, agent: AgentID) -> float:
+        player = self.agent_name_mapping[agent]
+        blocked_by_opponent = self.board.blocked_by_opponent(player)
+        blocked_by_player = self.board.blocked_by_opponent(self.board._opponent(player))
+        max_blocked = COLS
+
+        return (blocked_by_player - blocked_by_opponent) / max_blocked
+
     def eval(self, agent: AgentID) -> float:
         if agent not in self.agents:
             raise ValueError(f"Agent {agent} is not part of the game.")
 
         if self.terminated():
             return self.rewards[agent]
-    
-        player = self.agent_name_mapping[agent]
-        player_distance = self.board.player_min_distance(player)
-        opponent_distance = self.board.player_min_distance(self.board._opponent(player))
+        
+        return self.distance_feature(agent)
 
-        return opponent_distance - player_distance
+    def eval_with_blocked(self, agent: AgentID) -> float:
+        if agent not in self.agents:
+            raise ValueError(f"Agent {agent} is not part of the game.")
+
+        if self.terminated():
+            return self.rewards[agent]
+
+        distance = self.distance_feature(agent)
+        blocked = self.blocked_feature(agent)
+
+        return 0.5 * distance + 0.5 * blocked
+

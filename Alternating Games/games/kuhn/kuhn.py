@@ -6,11 +6,8 @@ from base.game import AlternatingGame, AgentID, ActionType
 
 class KuhnPoker(AlternatingGame):
 
-    def __init__(self, initial_player=None, seed=None, render_mode='human'):
+    def __init__(self, initial_player=None, render_mode='human'):
         self.render_mode = render_mode
-
-        self.seed = seed
-        random.seed(seed)
 
         # agents
         self.agents = ["agent_0", "agent_1"]
@@ -88,14 +85,13 @@ class KuhnPoker(AlternatingGame):
         self._hist = self._start
 
         # deal a card to each player
-        random.seed(self.seed)
         self._hand = random.choice(self._cards, size=self.num_agents, replace=False)      
 
         # reset agent selection
-        if self.initial_player is None:
+        #if self.initial_player is None:
             # select random player
-            self.initial_player = random.choice(self.players)
- 
+        #    self.initial_player = random.choice(self.players)
+        self.initial_player = random.choice(self.players)
         self._player = self.initial_player
         self.agent_selection = self.agents[self._player]
 

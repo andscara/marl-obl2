@@ -5,15 +5,22 @@ import sys
 
 class MiniMax(Agent):
 
-    def __init__(self, game: AlternatingGame, agent: AgentID, seed=None, depth: int=sys.maxsize) -> None:
+    def __init__(
+        self,
+        game: AlternatingGame,
+        agent: AgentID,
+        seed=None,
+        depth: int=sys.maxsize,
+        eval_name: str = "eval"
+    ) -> None:
         super().__init__(game, agent)
 
         if depth < 0:
             raise ValueError("Depth must be a non-negative integer.")
 
         self.depth = depth
-
         self.seed = seed
+        self.eval_name = eval_name
         np.random.seed(seed)
     
     def action(self):
@@ -62,4 +69,5 @@ class MiniMax(Agent):
         return chosen_action, value
 
     def eval(self, game: AlternatingGame):
-        return game.eval(self.agent)
+        eval_func = getattr(game, self.eval_name, None)
+        return eval_func(self.agent)
