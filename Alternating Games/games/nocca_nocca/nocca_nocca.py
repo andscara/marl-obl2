@@ -21,7 +21,7 @@ class NoccaNocca(AlternatingGame):
         self.initial_player = initial_player
         self.max_steps = max_steps
         self.seed = seed
-        random.seed(seed)
+        #random.seed(seed)
 
         # board
         self.board = None

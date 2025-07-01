@@ -44,7 +44,7 @@ class Board:
             if index_top > k:
                 continue
 
-            distance = abs(goal-y)
+            distance = abs(goal-x)
 
             if distance < min_distance:
                 min_distance = distance

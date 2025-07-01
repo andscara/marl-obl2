@@ -21,8 +21,9 @@ def ucb(node, C=sqrt(2)) -> float:
     if node.visits == 0:
         return float("inf")
 
-    agent_idx = node.game.agent_name_mapping[node.agent]
-    return node.cum_rewards[agent_idx] / node.visits + C * sqrt(log(node.parent.visits)/node.visits)
+    #agent_idx = node.game.agent_name_mapping[node.agent]
+    #return node.cum_rewards[agent_idx] / node.visits + C * sqrt(log(node.parent.visits)/node.visits)
+    return node.value / node.visits + C * sqrt(log(node.parent.visits)/node.visits)
 
 def uct(node: MCTSNode) -> MCTSNode:
     child = max(node.children, key=ucb)
