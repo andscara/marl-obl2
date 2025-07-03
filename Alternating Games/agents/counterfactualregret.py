@@ -42,11 +42,13 @@ class CounterFactualRegret(Agent):
 
     def __init__(self, game: AlternatingGame, agent: AgentID) -> None:
         super().__init__(game, agent)
-        self.node_dict: dict[ObsType, Node] = {}
+        self.node_dict: dict[AgentID, dict[ObsType, Node]] = {}
+        for agent_id in game.agents:
+            self.node_dict[agent_id] = {}
 
     def action(self):
         try:
-            node = self.node_dict[self.game.observe(self.agent)]
+            node = self.node_dict[self.agent][self.game.observe(self.agent)]
             a = np.argmax(np.random.multinomial(1, node.policy(), size=1))
             return a
         except:
@@ -79,14 +81,14 @@ class CounterFactualRegret(Agent):
         if type(I) == np.ndarray:
             I = tuple(I.reshape(-1))
 
-        if I not in self.node_dict:
+        if I not in self.node_dict[agent_q]:
             # Se cambia el código base para no pasarle el juego,
             # al resetear el ambiente puede cambiar el jugador inicial
             # por lo que el nodo puede quedar con un juego clonado mal configurado
             # entonces en el update también se cambia para recibir
             # explicitamente el jugador que actualiza.
-            self.node_dict[I] = Node(game.num_actions(agent_q), I)
-        node = self.node_dict[I]
+            self.node_dict[agent_q][I] = Node(game.num_actions(agent_q), I)
+        node = self.node_dict[agent_q][I]
 
         actions = list(game.action_iter(agent_q))
         utility = np.zeros(len(actions))

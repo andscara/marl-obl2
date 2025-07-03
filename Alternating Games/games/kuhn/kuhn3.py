@@ -7,21 +7,20 @@ from base.game import AlternatingGame, AgentID, ActionType
 
 class KuhnPoker3(AlternatingGame):
 
-    def __init__(self, initial_player=None, seed=None, render_mode='human'):
+    def __init__(self, initial_player=None, fix_initial_player=False, render_mode='human'):
         self.render_mode = render_mode
-
-        self.seed = seed
-        random.seed(seed)
 
         # agents
         self.agents = ["agent_" + str(r) for r in range(3)]
         self.players = [0, 1, 2]
 
         self.initial_player = initial_player
+        self.fix_initial_player = fix_initial_player
 
         self.possible_agents = self.agents[:]
         self.agent_name_mapping = dict(zip(self.agents, list(range(self.num_agents))))
         self.agent_selection = None
+        self._player = None
 
         # actions
         self._moves = ['p', 'b']
@@ -48,6 +47,12 @@ class KuhnPoker3(AlternatingGame):
         self.observation_spaces = {
             agent: Dict({ 'card': self._card_space, 'hist': self._hist_space}) for agent in self.agents
         }
+
+        self.observations = dict(map(lambda agent: (agent, {'card': None, 'hist': None}), self.agents))
+        self.rewards = dict(map(lambda agent: (agent, None), self.agents))
+        self.terminations = dict(map(lambda agent: (agent, False), self.agents))
+        self.truncations = dict(map(lambda agent: (agent, False), self.agents))
+        self.infos = dict(map(lambda agent: (agent, {}), self.agents))
     
     def step(self, action: ActionType) -> None:
         agent = self.agent_selection
@@ -73,15 +78,14 @@ class KuhnPoker3(AlternatingGame):
         self._hist = self._start
 
         # deal a card to each player
-        #np.random.seed(self.seed)
         self._hand = np.random.choice(self._cards, size=self.num_agents, replace=False)      
 
         # reset agent selection
-        #if self.initial_player is None:
-            # select random player
-            #self.initial_player = random.choice(self.players)
+        if self.fix_initial_player:
+            self.initial_player = 0
+        else:
+            self.initial_player = random.choice(self.players)
  
-        self.initial_player = random.choice(self.players)
         self._player = self.initial_player
         self.agent_selection = self.agents[self._player]
     
@@ -130,3 +134,19 @@ class KuhnPoker3(AlternatingGame):
             raise ValueError(f"{action} is not a legal action.")
         
         return self._moves[action]
+
+    def clone(self):
+        self_clone = KuhnPoker3(
+            initial_player=self.initial_player,
+            fix_initial_player=self.fix_initial_player,
+            render_mode=self.render_mode
+        )
+        self_clone._hist = self._hist
+        self_clone._hand = self._hand
+        self_clone._player = self._player
+        self_clone.rewards = self.rewards.copy()
+        self_clone.terminations = self.terminations.copy()
+        self_clone.truncations = self.truncations.copy()
+        self_clone.infos = self.infos.copy()
+        self_clone.agent_selection = self.agent_selection
+        return self_clone
